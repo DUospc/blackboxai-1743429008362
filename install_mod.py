@@ -4,10 +4,11 @@ import platform
 import subprocess
 import urllib.request
 import shutil
+import time
 
 # Configuration
 FORGE_VERSION = "1.21.4-49.0.35"
-FORGE_URL = f"https://maven.minecraftforge.net/net/minecraftforge/forge/{FORGE_VERSION}/forge-{FORGE_VERSION}-installer.jar"
+FORGE_URL = f"https://files.minecraftforge.net/maven/net/minecraftforge/forge/{FORGE_VERSION}/forge-{FORGE_VERSION}-installer.jar"
 MOD_FILE = "ai_villagers-1.0.jar"
 
 def get_minecraft_dir():
@@ -20,14 +21,39 @@ def get_minecraft_dir():
         return os.path.expanduser('~/.minecraft')
 
 def install_forge(mc_dir):
-    print("Downloading Forge installer...")
-    installer_path = os.path.join(mc_dir, 'forge-installer.jar')
-    urllib.request.urlretrieve(FORGE_URL, installer_path)
-    
-    print("Installing Forge...")
-    subprocess.run(["java", "-jar", installer_path, "--installServer"], check=True)
-    os.remove(installer_path)
-    print("Forge installed successfully")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            print(f"Downloading Forge installer (attempt {attempt + 1})...")
+            installer_path = os.path.join(mc_dir, 'forge-installer.jar')
+            
+            # Use urlopen with custom headers to avoid 403
+            req = urllib.request.Request(
+                FORGE_URL,
+                headers={'User-Agent': 'Mozilla/5.0'}
+            )
+            with urllib.request.urlopen(req) as response, open(installer_path, 'wb') as out_file:
+                shutil.copyfileobj(response, out_file)
+            
+            print("Installing Forge...")
+            result = subprocess.run(
+                ["java", "-jar", installer_path, "--installServer"],
+                check=False,
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode != 0:
+                raise Exception(f"Forge installer failed: {result.stderr}")
+                
+            os.remove(installer_path)
+            print("Forge installed successfully")
+            return
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            print(f"Attempt failed: {str(e)}")
+            time.sleep(5)  # Wait before retrying
 
 def install_mod(mc_dir):
     mods_dir = os.path.join(mc_dir, 'mods')
