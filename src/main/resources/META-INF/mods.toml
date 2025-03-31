@@ -1,0 +1,19 @@
+modLoader="javafml"
+loaderVersion="[49,)"
+license="MIT"
+issueTrackerURL="https://github.com/yourusername/ai_villagers/issues"
+
+[[mods]]
+modId="ai_villagers"
+version="1.0"
+displayName="AI Villagers"
+description="Adds smart villagers with chat interaction capabilities"
+authors="YourName"
+credits="Thanks to the Minecraft Forge team"
+
+[dependencies.ai_villagers]
+modId="forge"
+mandatory=true
+versionRange="[49.0.35,)"
+ordering="NONE"
+side="BOTH"
